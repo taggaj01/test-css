@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sliding Images Effect</title>
+  <style>
+    body {
+      height: 100vh;
+      width: 100vw;
+      background-color: rgb(0, 0, 0);
+      margin: 0rem;
+      overflow: hidden;
+    }
+    #image-track {
+      display: flex;
+      gap: 4vmin;
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(0%, -50%); 
+      user-select: none;
+    }
+    #image-track > .image {
+      width: 40vmin;
+      height: 56vmin;
+      object-fit: cover;
+      object-position: 100% center;
+    }
+  </style>
+</head>
+<body>
+  <div id="image-track" data-mouse-down-at="0" data-prev-percentage="0">
+  <img class="image" src="https://images.unsplash.com/photo-1697564264863-1a426c032026?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MzR8fGhvbGx5d29vZCUyMHN0dWRpb3N8ZW58MHx8MHx8fDI%3D&auto=format&fit=crop&q=60&w=900" draggable="false" />
+  <img class="image" src="https://images.unsplash.com/photo-1708881641022-43a3b8e82532?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8dG93ZXIlMjBvZiUyMHRlcnJvcnxlbnwwfHwwfHx8Mg%3D%3D&auto=format&fit=crop&q=60&w=900" draggable="false" />
+  <img class="image" src="https://images.unsplash.com/photo-1653850406499-9ed408e87984?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8aG9sbHl3b29kJTIwc3R1ZGlvcyUyMGRpc25leXxlbnwwfHwwfHx8Mg%3D%3D&auto=format&fit=crop&q=60&w=900" draggable="false" />
+  <img class="image" src="https://images.unsplash.com/photo-1587783586691-096850839bd9?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=1974" draggable="false" />
+  </div>
+
+  <script>
+    const track = document.getElementById("image-track");
+    let animationFrameId = null;
+    let targetPercentage = 0;
+
+    const setTrackPosition = percentage => {
+      track.style.transform = `translate(${percentage}%, -50%)`;
+      for(const image of track.getElementsByClassName("image")) {
+        image.style.objectPosition = `${100 + percentage}% center`;
+      }
+    };
+
+    const animateTrack = () => {
+      const current = parseFloat(track.dataset.percentage) || 0;
+      const next = current + (targetPercentage - current) * 0.08
+      track.dataset.percentage = next;
+      setTrackPosition(next);
+      if(Math.abs(next - targetPercentage) > 0.02) {
+        animationFrameId = requestAnimationFrame(animateTrack);
+      } else {
+        setTrackPosition(targetPercentage);
+        track.dataset.percentage = targetPercentage;
+        animationFrameId = null;
+      }
+    };
+
+    function getUserX(e) {
+      return e.touches ? e.touches[0].clientX : e.clientX;
+    }
+
+    function handlePointerDown(e) {
+      track.dataset.mouseDownAt = getUserX(e);
+    }
+
+    function handlePointerUp(e) {
+      track.dataset.mouseDownAt = "0";
+      track.dataset.prevPercentage = track.dataset.percentage;
+    }
+
+    function handlePointerMove(e) {
+  if(track.dataset.mouseDownAt === "0") return;
+  const mouseDelta = parseFloat(track.dataset.mouseDownAt) - getUserX(e),
+    maxDelta = window.innerWidth / 2;
+  const percentage = (mouseDelta / maxDelta) * -100,
+    nextPercentageUnconstrained = parseFloat(track.dataset.prevPercentage) + percentage,
+    nextPercentage = Math.max(Math.min(nextPercentageUnconstrained, 0), -100);
+  targetPercentage = nextPercentage;
+  if(!animationFrameId) animateTrack();
+    }
+
+    window.addEventListener('mousedown', handlePointerDown);
+    window.addEventListener('touchstart', handlePointerDown);
+    window.addEventListener('mouseup', handlePointerUp);
+    window.addEventListener('touchend', handlePointerUp);
+    window.addEventListener('mousemove', handlePointerMove);
+    window.addEventListener('touchmove', handlePointerMove);
+
+    window.addEventListener('keydown', e => {
+      const step = 3; // percentage step for each key press
+      let current = targetPercentage;
+      if (e.key === 'ArrowLeft') {
+        targetPercentage = Math.min(current + step, 0);
+        if(!animationFrameId) animateTrack();
+      } else if (e.key === 'ArrowRight') {
+        targetPercentage = Math.max(current - step, -100);
+        if(!animationFrameId) animateTrack();
+      }
+    });
+  </script>
+</body>
+</html>
